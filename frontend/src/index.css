@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* Mermaid SVG styling for dark theme */
+.mermaid-output svg {
+  background: transparent !important;
+  max-width: 100%;
+}
+
+.mermaid-output .node rect,
+.mermaid-output .node circle,
+.mermaid-output .node ellipse,
+.mermaid-output .node polygon {
+  fill: #1e3a5f !important;
+  stroke: #4f86c6 !important;
+}
+
+.mermaid-output .node .label {
+  color: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+}
+
+.mermaid-output .edgePath .path {
+  stroke: #4f86c6 !important;
+}
