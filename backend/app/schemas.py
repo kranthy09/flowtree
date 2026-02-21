@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -12,6 +13,12 @@ class NodeCreate(BaseModel):
     parent_id: int | None = None
     left_child_id: int | None = None
     right_child_id: int | None = None
+    service_method: str | None = None
+    database_query: str | None = None
+    external_api_call: str | None = None
+    condition: str | None = None
+    input_schema: dict[str, Any] | None = None
+    output_schema: dict[str, Any] | None = None
 
     @field_validator("type")
     @classmethod
@@ -25,9 +32,15 @@ class NodeUpdate(BaseModel):
     value: int | None = None
     name: str | None = None
     type: str | None = None
-    parent_id: int | None = None  # set to null to orphan
-    left_child_id: int | None = None   # set to null to disconnect
-    right_child_id: int | None = None  # set to null to disconnect
+    parent_id: int | None = None
+    left_child_id: int | None = None
+    right_child_id: int | None = None
+    service_method: str | None = None
+    database_query: str | None = None
+    external_api_call: str | None = None
+    condition: str | None = None
+    input_schema: dict[str, Any] | None = None
+    output_schema: dict[str, Any] | None = None
 
     @field_validator("type")
     @classmethod
@@ -47,4 +60,10 @@ class NodeResponse(BaseModel):
     parent_id: int | None = None
     left_child_id: int | None = None
     right_child_id: int | None = None
+    service_method: str | None = None
+    database_query: str | None = None
+    external_api_call: str | None = None
+    condition: str | None = None
+    input_schema: dict[str, Any] | None = None
+    output_schema: dict[str, Any] | None = None
     created_at: datetime

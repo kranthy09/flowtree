@@ -4,6 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import NumberNode
 from app.schemas import NodeCreate, NodeUpdate
 
+# Fields that need relational validation (handled explicitly in update_node)
+_RELATIONSHIP_FIELDS = {"parent_id", "left_child_id", "right_child_id"}
+
 
 async def _validate_parent(
     session: AsyncSession,
@@ -106,6 +109,18 @@ async def _validate_child_ref(
         )
 
 
+async def _validate_logic_fields(data) -> None:
+    """Validate business logic fields."""
+    if data.input_schema is not None and not isinstance(
+        data.input_schema, dict
+    ):
+        raise ValueError("input_schema must be a JSON object")
+    if data.output_schema is not None and not isinstance(
+        data.output_schema, dict
+    ):
+        raise ValueError("output_schema must be a JSON object")
+
+
 async def get_all_nodes(
     session: AsyncSession, workspace_id: str
 ) -> list[NumberNode]:
@@ -135,6 +150,7 @@ async def create_node(
     await _validate_child_ref(
         session, workspace_id, data.right_child_id, None, "right_child_id"
     )
+    await _validate_logic_fields(data)
     node = NumberNode(workspace_id=workspace_id, **data.model_dump())
     session.add(node)
     await session.commit()
@@ -158,17 +174,12 @@ async def update_node(
     if not node:
         return None
 
-    # Determine final left/right for left==right check
-    final_left = (
-        data.left_child_id
-        if "left_child_id" in data.model_fields_set
-        else node.left_child_id
-    )
-    final_right = (
-        data.right_child_id
-        if "right_child_id" in data.model_fields_set
-        else node.right_child_id
-    )
+    # Only operate on fields actually sent in the request
+    update_data = data.model_dump(exclude_unset=True)
+
+    # Left == right check using effective values after update
+    final_left = update_data.get("left_child_id", node.left_child_id)
+    final_right = update_data.get("right_child_id", node.right_child_id)
     if (
         final_left is not None
         and final_right is not None
@@ -178,35 +189,37 @@ async def update_node(
             "left_child_id and right_child_id cannot be the same node"
         )
 
-    if data.value is not None:
-        node.value = data.value
-    if data.name is not None:
-        node.name = data.name
-    if data.type is not None:
-        node.type = data.type
-    if "parent_id" in data.model_fields_set:
+    await _validate_logic_fields(data)
+
+    # Relationship fields — validate before applying
+    if "parent_id" in update_data:
         await _validate_parent(
-            session, workspace_id, data.parent_id, node_id
+            session, workspace_id, update_data["parent_id"], node_id
         )
-        node.parent_id = data.parent_id
-    if "left_child_id" in data.model_fields_set:
+    if "left_child_id" in update_data:
         await _validate_child_ref(
             session,
             workspace_id,
-            data.left_child_id,
+            update_data["left_child_id"],
             node_id,
             "left_child_id",
         )
-        node.left_child_id = data.left_child_id
-    if "right_child_id" in data.model_fields_set:
+    if "right_child_id" in update_data:
         await _validate_child_ref(
             session,
             workspace_id,
-            data.right_child_id,
+            update_data["right_child_id"],
             node_id,
             "right_child_id",
         )
-        node.right_child_id = data.right_child_id
+
+    # value must not be set to null (non-nullable DB column)
+    if "value" in update_data and update_data["value"] is None:
+        del update_data["value"]
+
+    # Apply all fields
+    for field, value in update_data.items():
+        setattr(node, field, value)
 
     await session.commit()
     await session.refresh(node)

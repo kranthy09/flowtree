@@ -9,6 +9,7 @@ import {
 export function useNodes() {
   const [nodes, setNodes] = useState([])
   const [error, setError] = useState(null)
+  const [selectedNodeId, setSelectedNodeId] = useState(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -37,7 +38,19 @@ export function useNodes() {
   const remove = useCallback(async (id) => {
     await deleteNode(id)
     await refresh()
+    setSelectedNodeId((prev) => (prev === id ? null : prev))
   }, [refresh])
 
-  return { nodes, error, add, update, remove, refresh }
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null
+
+  return {
+    nodes,
+    error,
+    selectedNode,
+    selectNode: setSelectedNodeId,
+    add,
+    update,
+    remove,
+    refresh,
+  }
 }

@@ -278,6 +278,17 @@ function NodeEditForm({ node, allNodes, onSave, onCancel }) {
 
 // ─── Single tree node row (recursive) ─────────────────────────────────────────
 
+function logicCount(node) {
+  return [
+    node.service_method,
+    node.database_query,
+    node.external_api_call,
+    node.condition,
+    node.input_schema,
+    node.output_schema,
+  ].filter(Boolean).length;
+}
+
 function TreeNode({
   nodeId,
   depth,
@@ -288,6 +299,7 @@ function TreeNode({
   onToggle,
   onUpdate,
   onDelete,
+  onSelect,
   allNodes,
   visited,
 }) {
@@ -345,26 +357,43 @@ function TreeNode({
           {hasChildren ? (isExpanded ? "▾" : "▸") : "·"}
         </button>
 
-        {/* ID */}
-        <span className="text-gray-600 text-xs shrink-0">#{node.id}</span>
+        {/* Clickable label area — opens detail panel */}
+        <button
+          onClick={() => onSelect(node.id)}
+          className="flex items-center gap-1.5 min-w-0 text-left hover:opacity-80"
+          title="Open detail panel"
+        >
+          {/* ID */}
+          <span className="text-gray-600 text-xs shrink-0">#{node.id}</span>
 
-        {/* Value */}
-        <span className="font-mono text-sm text-gray-100 shrink-0">
-          {node.value}
-        </span>
-
-        {/* Name */}
-        {node.name && (
-          <span
-            className="text-gray-400 text-xs truncate min-w-0"
-            title={node.name}
-          >
-            {node.name}
+          {/* Value */}
+          <span className="font-mono text-sm text-gray-100 shrink-0 cursor-pointer">
+            {node.value}
           </span>
-        )}
 
-        {/* Type badge */}
-        <TypeBadge type={node.type} />
+          {/* Name */}
+          {node.name && (
+            <span
+              className="text-gray-400 text-xs truncate min-w-0"
+              title={node.name}
+            >
+              {node.name}
+            </span>
+          )}
+
+          {/* Type badge */}
+          <TypeBadge type={node.type} />
+
+          {/* Logic field count badge */}
+          {logicCount(node) > 0 && (
+            <span
+              className="shrink-0 text-[9px] px-1 py-px rounded bg-indigo-900/60 text-indigo-400 font-mono leading-none"
+              title="Logic fields populated"
+            >
+              {logicCount(node)}/6
+            </span>
+          )}
+        </button>
 
         {/* Actions */}
         <div className="ml-auto flex gap-1 shrink-0">
@@ -446,6 +475,7 @@ function TreeNode({
               onToggle={onToggle}
               onUpdate={onUpdate}
               onDelete={onDelete}
+              onSelect={onSelect}
               allNodes={allNodes}
               visited={childVisited}
             />
@@ -457,7 +487,7 @@ function TreeNode({
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export default function NodeExplorer({ nodes, onUpdate, onDelete }) {
+export default function NodeExplorer({ nodes, onUpdate, onDelete, onSelect }) {
   const { nodeMap, parentOnlyMap, roots } = useMemo(
     () => buildTree(nodes),
     [nodes]
@@ -543,6 +573,7 @@ export default function NodeExplorer({ nodes, onUpdate, onDelete }) {
             onToggle={handleToggle}
             onUpdate={onUpdate}
             onDelete={onDelete}
+            onSelect={onSelect}
             allNodes={nodes}
             visited={new Set()}
           />

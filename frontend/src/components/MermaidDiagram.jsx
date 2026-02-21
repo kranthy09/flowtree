@@ -10,6 +10,14 @@ const TYPE_COLORS = {
   default: "fill:#1e293b,color:#e2e8f0,stroke:#475569",
 };
 
+function getSubtitle(node) {
+  if (node.condition) return `\u27e8${node.condition}\u27e9`;
+  if (node.service_method) return node.service_method;
+  if (node.external_api_call) return node.external_api_call;
+  if (node.database_query) return "\uD83D\uDCCA query";
+  return null;
+}
+
 function buildCode(nodes) {
   if (!nodes.length) {
     return 'graph TD\n  empty["No nodes yet"]';
@@ -22,8 +30,18 @@ function buildCode(nodes) {
 
   // Node definitions
   for (const n of nodes) {
-    const label = n.name ? `${n.name}\\n(${n.value})` : String(n.value);
-    lines.push(`  n${n.id}["#35;${n.id}: ${label}"]`);
+    const name = n.name ? n.name : "node";
+    const sub = getSubtitle(n);
+    const label = sub
+      ? `${name}\\n(${n.value})\\n${sub}`
+      : n.name
+        ? `${n.name}\\n(${n.value})`
+        : String(n.value);
+    if (n.condition) {
+      lines.push(`  n${n.id}{"#35;${n.id}: ${label}"}`);
+    } else {
+      lines.push(`  n${n.id}["#35;${n.id}: ${label}"]`);
+    }
   }
 
   // Left/right child edges — labeled L and R
@@ -56,7 +74,7 @@ function buildCode(nodes) {
   );
 }
 
-export default function MermaidDiagram({ nodes }) {
+export default function MermaidDiagram({ nodes, onNodeClick }) {
   const containerRef = useRef(null);
   const spzRef = useRef(null);
   const [zoomPercent, setZoomPercent] = useState(100);
@@ -93,6 +111,17 @@ export default function MermaidDiagram({ nodes }) {
         svgEl.removeAttribute("height");
         svgEl.style.width = "100%";
         svgEl.style.height = "100%";
+
+        // Bind click events on diagram nodes → open detail panel
+        if (onNodeClick) {
+          svgEl.querySelectorAll(".node").forEach((el) => {
+            const match = el.id?.match(/n(\d+)/);
+            if (match) {
+              el.style.cursor = "pointer";
+              el.addEventListener("click", () => onNodeClick(Number(match[1])));
+            }
+          });
+        }
 
         spzRef.current = svgPanZoom(svgEl, {
           controlIconsEnabled: false,
