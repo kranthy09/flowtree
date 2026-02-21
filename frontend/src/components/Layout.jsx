@@ -1,6 +1,6 @@
-import NodeForm from './NodeForm'
-import NodeList from './NodeList'
-import MermaidDiagram from './MermaidDiagram'
+import NodeForm from "./NodeForm";
+import NodeExplorer from "./NodeExplorer";
+import MermaidDiagram from "./MermaidDiagram";
 
 export default function Layout({ nodes, onAdd, onUpdate, onDelete, error }) {
   return (
@@ -19,8 +19,8 @@ export default function Layout({ nodes, onAdd, onUpdate, onDelete, error }) {
       <div className="flex flex-1 min-h-0">
         {/* Left panel — node list */}
         <div className="w-2/5 flex flex-col border-r border-gray-700 min-w-0">
-          <NodeForm onAdd={onAdd} />
-          <NodeList nodes={nodes} onUpdate={onUpdate} onDelete={onDelete} />
+          <NodeForm nodes={nodes} onAdd={onAdd} />
+          <NodeExplorer nodes={nodes} onUpdate={onUpdate} onDelete={onDelete} />
         </div>
 
         {/* Right panel — diagram */}
@@ -29,5 +29,5 @@ export default function Layout({ nodes, onAdd, onUpdate, onDelete, error }) {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -24,7 +24,10 @@ async def create_node(
     session: Annotated[AsyncSession, Depends(get_session)],
     workspace_id: Annotated[str, Depends(get_workspace_id)],
 ) -> NodeResponse:
-    return await node_service.create_node(session, workspace_id, data)
+    try:
+        return await node_service.create_node(session, workspace_id, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.patch("/{node_id}", response_model=NodeResponse)
@@ -34,7 +37,10 @@ async def update_node(
     session: Annotated[AsyncSession, Depends(get_session)],
     workspace_id: Annotated[str, Depends(get_workspace_id)],
 ) -> NodeResponse:
-    node = await node_service.update_node(session, workspace_id, node_id, data)
+    try:
+        node = await node_service.update_node(session, workspace_id, node_id, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     if not node:
         raise HTTPException(status_code=404, detail="Node not found")
     return node

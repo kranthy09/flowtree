@@ -12,7 +12,6 @@ body,
 /* Mermaid SVG styling for dark theme */
 .mermaid-output svg {
   background: transparent !important;
-  max-width: 100%;
 }
 
 .mermaid-output .node rect,

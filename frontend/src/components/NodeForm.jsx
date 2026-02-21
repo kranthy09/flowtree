@@ -2,10 +2,28 @@ import { useState } from 'react'
 
 const TYPE_OPTIONS = ['input', 'process', 'output']
 
-export default function NodeForm({ onAdd }) {
+function availableAsChild(nodes, excludeId) {
+  return nodes.filter(
+    (n) =>
+      n.id !== excludeId &&
+      !nodes.some(
+        (other) =>
+          other.left_child_id === n.id || other.right_child_id === n.id,
+      ),
+  )
+}
+
+function nodeLabel(n) {
+  return `#${n.id}: ${n.name ?? `node ${n.id}`} (${n.value})`
+}
+
+export default function NodeForm({ nodes, onAdd }) {
   const [value, setValue] = useState('')
   const [name, setName] = useState('')
   const [type, setType] = useState('')
+  const [parentId, setParentId] = useState('')
+  const [leftChildId, setLeftChildId] = useState('')
+  const [rightChildId, setRightChildId] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -23,16 +41,31 @@ export default function NodeForm({ onAdd }) {
         value: n,
         name: name.trim() || null,
         type: type || null,
+        parent_id: parentId ? parseInt(parentId, 10) : null,
+        left_child_id: leftChildId ? parseInt(leftChildId, 10) : null,
+        right_child_id: rightChildId ? parseInt(rightChildId, 10) : null,
       })
       setValue('')
       setName('')
       setType('')
+      setParentId('')
+      setLeftChildId('')
+      setRightChildId('')
     } catch (err) {
       setError(err.message || 'Failed to add node')
     } finally {
       setLoading(false)
     }
   }
+
+  const leftOptions = availableAsChild(
+    nodes,
+    rightChildId ? parseInt(rightChildId, 10) : null,
+  )
+  const rightOptions = availableAsChild(
+    nodes,
+    leftChildId ? parseInt(leftChildId, 10) : null,
+  )
 
   return (
     <form onSubmit={handleSubmit} className="p-4 border-b border-gray-700 space-y-2">
@@ -68,6 +101,41 @@ export default function NodeForm({ onAdd }) {
         >
           + Add
         </button>
+      </div>
+      <div className="flex gap-2 items-center flex-wrap">
+        <label className="text-xs text-gray-400 w-12 shrink-0">Parent:</label>
+        <select
+          value={parentId}
+          onChange={(e) => setParentId(e.target.value)}
+          className="flex-1 min-w-[110px] bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-100 focus:outline-none focus:border-indigo-500"
+        >
+          <option value="">(none)</option>
+          {nodes.map((n) => (
+            <option key={n.id} value={n.id}>{nodeLabel(n)}</option>
+          ))}
+        </select>
+        <label className="text-xs text-gray-400 shrink-0">L child:</label>
+        <select
+          value={leftChildId}
+          onChange={(e) => setLeftChildId(e.target.value)}
+          className="flex-1 min-w-[110px] bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-100 focus:outline-none focus:border-indigo-500"
+        >
+          <option value="">(none)</option>
+          {leftOptions.map((n) => (
+            <option key={n.id} value={n.id}>{nodeLabel(n)}</option>
+          ))}
+        </select>
+        <label className="text-xs text-gray-400 shrink-0">R child:</label>
+        <select
+          value={rightChildId}
+          onChange={(e) => setRightChildId(e.target.value)}
+          className="flex-1 min-w-[110px] bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-100 focus:outline-none focus:border-indigo-500"
+        >
+          <option value="">(none)</option>
+          {rightOptions.map((n) => (
+            <option key={n.id} value={n.id}>{nodeLabel(n)}</option>
+          ))}
+        </select>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
     </form>

@@ -9,6 +9,9 @@ class NodeCreate(BaseModel):
     value: int
     name: str | None = None
     type: str | None = None
+    parent_id: int | None = None
+    left_child_id: int | None = None
+    right_child_id: int | None = None
 
     @field_validator("type")
     @classmethod
@@ -22,6 +25,9 @@ class NodeUpdate(BaseModel):
     value: int | None = None
     name: str | None = None
     type: str | None = None
+    parent_id: int | None = None  # set to null to orphan
+    left_child_id: int | None = None   # set to null to disconnect
+    right_child_id: int | None = None  # set to null to disconnect
 
     @field_validator("type")
     @classmethod
@@ -38,4 +44,7 @@ class NodeResponse(BaseModel):
     value: int
     name: str | None = None
     type: str | None = None
+    parent_id: int | None = None
+    left_child_id: int | None = None
+    right_child_id: int | None = None
     created_at: datetime
