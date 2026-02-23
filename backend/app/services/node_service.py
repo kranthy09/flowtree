@@ -110,7 +110,7 @@ async def _validate_child_ref(
 
 
 async def _validate_logic_fields(data) -> None:
-    """Validate business logic fields."""
+    """Validate business logic and Level 6 execution fields."""
     if data.input_schema is not None and not isinstance(
         data.input_schema, dict
     ):
@@ -119,6 +119,21 @@ async def _validate_logic_fields(data) -> None:
         data.output_schema, dict
     ):
         raise ValueError("output_schema must be a JSON object")
+    # Level 6 range checks
+    retry = getattr(data, "retry_count", None)
+    if retry is not None and retry < 0:
+        raise ValueError("retry_count must be >= 0")
+    timeout = getattr(data, "timeout_ms", None)
+    if timeout is not None and timeout <= 0:
+        raise ValueError("timeout_ms must be a positive integer")
+    sla = getattr(data, "sla_ms", None)
+    if sla is not None and sla <= 0:
+        raise ValueError("sla_ms must be a positive integer")
+    code = getattr(data, "http_status_code", None)
+    if code is not None and not (100 <= code <= 599):
+        raise ValueError(
+            "http_status_code must be between 100 and 599"
+        )
 
 
 async def get_all_nodes(

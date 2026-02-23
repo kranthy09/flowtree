@@ -10,6 +10,20 @@ const TYPE_COLORS = {
   default: "fill:#1e293b,color:#e2e8f0,stroke:#475569",
 };
 
+const STATUS_COLORS = {
+  SUCCESS: "fill:#166534,color:#dcfce7,stroke:#14532d",
+  FAILED:  "fill:#991b1b,color:#fef2f2,stroke:#7f1d1d",
+  PENDING: "fill:#374151,color:#9ca3af,stroke:#4b5563",
+  RUNNING: "fill:#1e40af,color:#dbeafe,stroke:#1e3a8a",
+};
+
+const STATUS_EMOJI = {
+  SUCCESS: "\u2705",
+  FAILED:  "\u274c",
+  PENDING: "\u23f3",
+  RUNNING: "\uD83D\uDD04",
+};
+
 function getSubtitle(node) {
   if (node.condition) return `\u27e8${node.condition}\u27e9`;
   if (node.service_method) return node.service_method;
@@ -18,40 +32,69 @@ function getSubtitle(node) {
   return null;
 }
 
-function buildCode(nodes) {
+function nodeShape(n, label) {
+  const id = `#35;${n.id}: ${label}`;
+  const role = n.node_role;
+  if (role === "start" || role === "terminal") {
+    return `  n${n.id}(["${id}"])`;   // stadium shape
+  }
+  if (role === "decision" || (!role && n.condition)) {
+    return `  n${n.id}{"${id}"}`;     // diamond shape
+  }
+  return `  n${n.id}["${id}"]`;       // rectangle (default)
+}
+
+function buildCode(nodes, activeRun) {
   if (!nodes.length) {
     return 'graph TD\n  empty["No nodes yet"]';
   }
 
+  // Fast node lookup for edge-label and child branch_condition reads
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+
+  // Build status map from active run
+  const statusMap = new Map();
+  if (activeRun?.executions) {
+    for (const ex of activeRun.executions) {
+      statusMap.set(ex.node_id, ex.status);
+    }
+  }
+
   const lines = ["graph TD"];
   const styleLines = [];
-  // Track edges drawn via left/right child to avoid duplicate parent_id arrows
   const childEdgesDrawn = new Set();
 
   // Node definitions
   for (const n of nodes) {
     const name = n.name ? n.name : "node";
     const sub = getSubtitle(n);
-    const label = sub
+    let label = sub
       ? `${name}\\n(${n.value})\\n${sub}`
       : n.name
         ? `${n.name}\\n(${n.value})`
         : String(n.value);
-    if (n.condition) {
-      lines.push(`  n${n.id}{"#35;${n.id}: ${label}"}`);
-    } else {
-      lines.push(`  n${n.id}["#35;${n.id}: ${label}"]`);
+
+    // Append execution status emoji when a run is active
+    const status = statusMap.get(n.id);
+    if (status && STATUS_EMOJI[status]) {
+      label += `\\n${STATUS_EMOJI[status]} ${status}`;
     }
+
+    lines.push(nodeShape(n, label));
   }
 
-  // Left/right child edges — labeled L and R
+  // Left/right child edges — label shows branch_condition when set, else L/R
   for (const n of nodes) {
     if (n.left_child_id) {
-      lines.push(`  n${n.id} -->|L| n${n.left_child_id}`);
+      const leftNode = nodeMap.get(n.left_child_id);
+      const lLabel = leftNode?.branch_condition ?? "L";
+      lines.push(`  n${n.id} -->|${lLabel}| n${n.left_child_id}`);
       childEdgesDrawn.add(`${n.id}-${n.left_child_id}`);
     }
     if (n.right_child_id) {
-      lines.push(`  n${n.id} -->|R| n${n.right_child_id}`);
+      const rightNode = nodeMap.get(n.right_child_id);
+      const rLabel = rightNode?.branch_condition ?? "R";
+      lines.push(`  n${n.id} -->|${rLabel}| n${n.right_child_id}`);
       childEdgesDrawn.add(`${n.id}-${n.right_child_id}`);
     }
   }
@@ -63,9 +106,17 @@ function buildCode(nodes) {
     }
   }
 
-  // Style lines per node
+  // Style lines — status overrides type/role when run is active
   for (const n of nodes) {
-    const color = TYPE_COLORS[n.type] ?? TYPE_COLORS.default;
+    const status = statusMap.get(n.id);
+    let color;
+    if (status && STATUS_COLORS[status]) {
+      color = STATUS_COLORS[status];
+    } else if (n.node_role === "error") {
+      color = "fill:#7f1d1d,color:#fef2f2,stroke:#991b1b";
+    } else {
+      color = TYPE_COLORS[n.type] ?? TYPE_COLORS.default;
+    }
     styleLines.push(`  style n${n.id} ${color}`);
   }
 
@@ -74,7 +125,7 @@ function buildCode(nodes) {
   );
 }
 
-export default function MermaidDiagram({ nodes, onNodeClick }) {
+export default function MermaidDiagram({ nodes, onNodeClick, activeRun }) {
   const containerRef = useRef(null);
   const spzRef = useRef(null);
   const [zoomPercent, setZoomPercent] = useState(100);
@@ -85,16 +136,13 @@ export default function MermaidDiagram({ nodes, onNodeClick }) {
 
     let cancelled = false;
 
-    // Destroy the previous svg-pan-zoom instance before replacing the SVG
     if (spzRef.current) {
-      try {
-        spzRef.current.destroy();
-      } catch (_) {}
+      try { spzRef.current.destroy(); } catch (_) {}
       spzRef.current = null;
     }
 
     const id = `mermaid-svg-${++renderSeq}`;
-    const code = buildCode(nodes);
+    const code = buildCode(nodes, activeRun);
 
     window.mermaid
       .render(id, code)
@@ -105,14 +153,13 @@ export default function MermaidDiagram({ nodes, onNodeClick }) {
         const svgEl = containerRef.current.querySelector("svg");
         if (!svgEl) return;
 
-        // Remove Mermaid's inline size constraints so the SVG fills the container
         svgEl.style.maxWidth = "";
         svgEl.removeAttribute("width");
         svgEl.removeAttribute("height");
         svgEl.style.width = "100%";
         svgEl.style.height = "100%";
 
-        // Bind click events on diagram nodes → open detail panel
+        // Bind click events on diagram nodes
         if (onNodeClick) {
           svgEl.querySelectorAll(".node").forEach((el) => {
             const match = el.id?.match(/n(\d+)/);
@@ -145,13 +192,11 @@ export default function MermaidDiagram({ nodes, onNodeClick }) {
     return () => {
       cancelled = true;
       if (spzRef.current) {
-        try {
-          spzRef.current.destroy();
-        } catch (_) {}
+        try { spzRef.current.destroy(); } catch (_) {}
         spzRef.current = null;
       }
     };
-  }, [nodes]);
+  }, [nodes, activeRun, onNodeClick]);
 
   const handleZoomIn = () => {
     if (!spzRef.current) return;

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 
 const TYPE_OPTIONS = ['input', 'process', 'output']
+const NODE_ROLE_OPTIONS = ['start', 'process', 'decision', 'terminal', 'error']
+const BRANCH_CONDITION_OPTIONS = ['always', 'success', 'failure']
 
 function availableAsChild(nodes, excludeId) {
   return nodes.filter(
@@ -24,6 +26,8 @@ export default function NodeForm({ nodes, onAdd }) {
   const [parentId, setParentId] = useState('')
   const [leftChildId, setLeftChildId] = useState('')
   const [rightChildId, setRightChildId] = useState('')
+  const [nodeRole, setNodeRole] = useState('')
+  const [branchCondition, setBranchCondition] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -44,6 +48,8 @@ export default function NodeForm({ nodes, onAdd }) {
         parent_id: parentId ? parseInt(parentId, 10) : null,
         left_child_id: leftChildId ? parseInt(leftChildId, 10) : null,
         right_child_id: rightChildId ? parseInt(rightChildId, 10) : null,
+        node_role: nodeRole || null,
+        branch_condition: branchCondition || null,
       })
       setValue('')
       setName('')
@@ -51,6 +57,8 @@ export default function NodeForm({ nodes, onAdd }) {
       setParentId('')
       setLeftChildId('')
       setRightChildId('')
+      setNodeRole('')
+      setBranchCondition('')
     } catch (err) {
       setError(err.message || 'Failed to add node')
     } finally {
@@ -134,6 +142,30 @@ export default function NodeForm({ nodes, onAdd }) {
           <option value="">(none)</option>
           {rightOptions.map((n) => (
             <option key={n.id} value={n.id}>{nodeLabel(n)}</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex gap-2 items-center flex-wrap">
+        <label className="text-xs text-gray-400 w-12 shrink-0">Role:</label>
+        <select
+          value={nodeRole}
+          onChange={(e) => setNodeRole(e.target.value)}
+          className="flex-1 min-w-[110px] bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-100 focus:outline-none focus:border-indigo-500"
+        >
+          <option value="">(none)</option>
+          {NODE_ROLE_OPTIONS.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+        <label className="text-xs text-gray-400 shrink-0">Branch:</label>
+        <select
+          value={branchCondition}
+          onChange={(e) => setBranchCondition(e.target.value)}
+          className="flex-1 min-w-[110px] bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-100 focus:outline-none focus:border-indigo-500"
+        >
+          <option value="">(always)</option>
+          {BRANCH_CONDITION_OPTIONS.map((c) => (
+            <option key={c} value={c}>{c}</option>
           ))}
         </select>
       </div>

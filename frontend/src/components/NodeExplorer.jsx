@@ -280,12 +280,24 @@ function NodeEditForm({ node, allNodes, onSave, onCancel }) {
 
 function logicCount(node) {
   return [
+    // L4 business logic
     node.service_method,
     node.database_query,
     node.external_api_call,
     node.condition,
     node.input_schema,
     node.output_schema,
+    // L6 fields (skip defaults: retry_count=0, is_async=false)
+    node.node_role,
+    node.branch_condition,
+    node.http_status_code,
+    node.error_type,
+    node.description,
+    node.owner_team,
+    node.timeout_ms,
+    node.sla_ms,
+    node.retry_count > 0 ? node.retry_count : null,
+    node.is_async ? node.is_async : null,
   ].filter(Boolean).length;
 }
 
@@ -384,13 +396,33 @@ function TreeNode({
           {/* Type badge */}
           <TypeBadge type={node.type} />
 
+          {/* Node role badge */}
+          {node.node_role && (
+            <span
+              className={`shrink-0 text-[9px] px-1.5 py-px rounded font-medium leading-none ${
+                node.node_role === "error"
+                  ? "bg-red-900/60 text-red-400"
+                  : node.node_role === "start"
+                  ? "bg-teal-900/60 text-teal-400"
+                  : node.node_role === "terminal"
+                  ? "bg-purple-900/60 text-purple-400"
+                  : node.node_role === "decision"
+                  ? "bg-yellow-900/60 text-yellow-400"
+                  : "bg-gray-700/60 text-gray-400"
+              }`}
+              title={`Role: ${node.node_role}`}
+            >
+              {node.node_role}
+            </span>
+          )}
+
           {/* Logic field count badge */}
           {logicCount(node) > 0 && (
             <span
               className="shrink-0 text-[9px] px-1 py-px rounded bg-indigo-900/60 text-indigo-400 font-mono leading-none"
-              title="Logic fields populated"
+              title="Fields populated"
             >
-              {logicCount(node)}/6
+              {logicCount(node)}/16
             </span>
           )}
         </button>

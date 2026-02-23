@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 
+from app.routes import executions as executions_router
 from app.routes import nodes as nodes_router
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ async def workspace_middleware(request: Request, call_next):
     response.set_cookie(
         key="workspace_id",
         value=workspace_id,
-        httponly=True,
+        httponly=False,
         samesite="lax",
         max_age=31536000,
         path="/",
@@ -50,3 +51,4 @@ app.add_middleware(
 )
 
 app.include_router(nodes_router.router, prefix="/api/nodes")
+app.include_router(executions_router.router, prefix="/api/executions")
