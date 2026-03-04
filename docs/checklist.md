@@ -79,8 +79,11 @@ Rules for the coding agent to follow in every generation session.
 22. Next.js App Router: server components by default. Add `"use client"` only when needed (interactivity, hooks, canvas).
 23. No hardcoded colors. Use CSS variables from `globals.css` or Tailwind tokens.
 
+### Routing
+24. **Never use `<Link href="/workspace/new">`** — `/new` hits the `[id]` dynamic route and sends `"new"` as a UUID to the backend, causing a 422. Always POST to `/workspaces` first, then `router.push(/workspace/${ws.id})` with the real UUID. Guard `useNodes` (and all workspace hooks) with a UUID regex so stale/invalid ids never fire API calls.
+
 ### React Flow
-24. `onNodesChange` must only update positions (not other fields). Field edits go through the Properties Panel → API.
+25. `onNodesChange` must only update positions (not other fields). Field edits go through the Properties Panel → API.
 25. Never store API response data directly as React Flow node `data`. Transform via `transformDbNodesToFlow()`.
 26. Custom node components must call `useNodeId()` to get their id — never rely on prop drilling.
 27. `nodeTypes` object must be defined outside the component (stable reference) to avoid re-renders.

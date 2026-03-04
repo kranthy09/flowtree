@@ -1,0 +1,48 @@
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // Backgrounds
+        "bg-base":     "#0F1117",
+        "bg-surface":  "#1A1D27",
+        "bg-elevated": "#232636",
+        // Node type colors (match context.md §7)
+        "node-api":      "#1A1A2E",
+        "node-endpoint": "#E07B39",
+        "node-request":  "#2E86AB",
+        "node-response": "#27AE60",
+        "node-error":    "#E74C3C",
+        "node-field":    "#6C757D",
+        "node-model":    "#9B59B6",
+        "node-step":     "#7B5EA7",
+        // Brand
+        primary:         "#6366F1",
+        "primary-hover": "#4F46E5",
+        // Semantic
+        success: "#22C55E",
+        warning: "#F59E0B",
+        error:   "#EF4444",
+        // Text
+        "text-primary":   "#F1F5F9",
+        "text-secondary": "#94A3B8",
+        "text-muted":     "#475569",
+        // Border
+        border: "#2D3148",
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;
